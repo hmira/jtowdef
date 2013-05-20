@@ -1,3 +1,5 @@
+import java.beans.PropertyChangeListener;
+import java.beans.PropertyChangeSupport;
 import java.util.ArrayList;
 import java.util.LinkedList;
 
@@ -8,54 +10,154 @@ import javax.swing.JLabel;
 import javax.vecmath.Tuple2d;
 import javax.vecmath.Vector2d;
 
-
+import com.jogamp.opengl.swt.GLCanvas;
 import com.jogamp.opengl.util.texture.Texture;
 
-
+/**
+ * @author hmira
+ * */
 public class TowDefDrawing implements GLEventListener
+
 {
-	ArrayList<Enemy> enemies = null;
-	ArrayList<Cannon> cannons = null;
-	ArrayList<Bullet> bullets = null;
-	RangePreviewer rangePreviewer = null;
+	/**
+	 * Gamestatus that describes the status of the gameplay
+	 * */
+	public enum GameStatus
+	{
+		WIN,
+		LOSE,
+		PLAYING
+	}
 	
+	/**
+	 * support for game-over-listener
+	 * v prípade zostrelenia všetkých nepriateľov
+	 * alebo dorazenia nepriateľa do cieľa
+	 * sa vyvolá event, ktorý má v <b>TowerDef</b> listener
+	 * */
+	public PropertyChangeSupport pcs = new PropertyChangeSupport(this);
+	public GameStatus gameStatus = GameStatus.PLAYING;
+	public void setGameStatus(GameStatus gameStatus)
+	{
+		GameStatus oldGame = this.gameStatus;
+		this.gameStatus = gameStatus;
+		this.pcs.firePropertyChange("gameStatus", oldGame, gameStatus);
+    }
+	
+    public void addPropertyChangeListener(PropertyChangeListener listener) {
+        this.pcs.addPropertyChangeListener(listener);
+    }
+	
+    /** list of enemies */
+	ArrayList<Enemy> enemies = null;
+    /** list of cannons */
+	ArrayList<Cannon> cannons = null;
+    /** list of bullets */
+	ArrayList<Bullet> bullets = null;
+	/** preview of the range after a right click anywhere on the game-field */
+	RangePreviewer rangePreviewer = null;
+	/** final point where are the enemies heading */
+	Vector2d finishPoint = null;
+	
+	/** pointer to label that shows how much money are left for buying cannons */
 	JLabel moneyLabel = null;
+	/** pointer to amount of money */
 	Integer money = null;
 	
+	/** member that provides and generates textures*/
 	TextureFactory textureFactory = new TextureFactory();
 	
+	public TowDefDrawing()
+	{}
+	
+	/**
+	 * method called upon defeating all enemies
+	 * */
+	public void Win()
+	{
+		System.err.println("you win");
+		setGameStatus(GameStatus.WIN);
+	}
+	
+	/**
+	 * method called upon escaping one of the enemies from the map
+	 */
+	public void Lose()
+	{
+		System.err.println("you lost");
+		setGameStatus(GameStatus.LOSE);
+	}
+	
+	/**
+	 * @category setter
+	 * setter for range previewer
+	 * */
 	public void setRangePreviewer(RangePreviewer a_rangePreviewer)
 	{
 		rangePreviewer = a_rangePreviewer;
 	}
 	
+	/**
+	 * @category setter
+	 * setter for enemy list
+	 * */
 	public void setEnemies(ArrayList<Enemy> a_enemies)
 	{
 		enemies = a_enemies;
 	}
 	
+	/**
+	 * @category setter
+	 * setter for cannon list
+	 * */
 	public void setCannons(ArrayList<Cannon> a_cannons)
 	{
 		cannons = a_cannons;
 	}
 	
+	/**
+	 * @category setter
+	 * setter for bullet list
+	 * */
 	public void setBullets(ArrayList<Bullet> a_bullets)
 	{
 		bullets = a_bullets;
 	}
 	
+	/**
+	 * @category setter
+	 * setter for last enemy point
+	 * */
+	public void setFinishPoint(Vector2d a_finishPoint)
+	{
+		finishPoint = a_finishPoint;
+	}
+	
+	/**
+	 * @category setter
+	 * setter for money
+	 * */
 	public void setMoney(Integer a_money, JLabel a_moneyLabel)
 	{
 		money = a_money;
 		moneyLabel = a_moneyLabel;
 	}
 	
+	/**
+	 * @param price		price
+	 * money updater
+	 * */
 	public void updateMoney(Integer price)
 	{
 		money += price;
 		moneyLabel.setText("money: " + Integer.toString(money) + "$  ");
 	}
 	
+	/**
+	 * @param x		X-coordinate
+	 * @param y		Y-coordinate
+	 * @param type	type of cannon [1,2,3]
+	 */
 	public void createCannon(int x, int y, int type)
 	{
 		Cannon c;
@@ -76,6 +178,10 @@ public class TowDefDrawing implements GLEventListener
 		}
 	}
 	
+	/**
+	 * @param gLDrawable	pointer to {@link GLCanvas}
+	 * initializing textures using {@link TextureFactory}
+	 * */
 	public void loadTextures(GLAutoDrawable gLDrawable)
 	{
         final GL2 gl = gLDrawable.getGL().getGL2();
@@ -94,10 +200,14 @@ public class TowDefDrawing implements GLEventListener
 	}
 
     Texture background_tex = null;
-	//private GLU glu = new GLU();
 	ArrayList<Vector2d> path = new ArrayList<Vector2d>();
 	long elapsed = 0;
-   
+	
+	/**
+	 * @param gLDrawable	pointer to {@link GLCanvas}
+	 * <b>iteration of loop in animation</b>
+	 * frequency is set to 60 fps by default
+	 * */
     public void display(GLAutoDrawable gLDrawable) 
     {
     	if (enemies != null)
@@ -156,7 +266,7 @@ public class TowDefDrawing implements GLEventListener
     	}
     	
     	if (enemies != null)
-    	{    
+    	{
     		LinkedList<Enemy> garbage_enemies = new LinkedList<Enemy>();
     		for (Enemy enemy : enemies) 
     		{
@@ -211,10 +321,30 @@ public class TowDefDrawing implements GLEventListener
         
 		gl.glFlush();
 		
+		/*RESOLUTION*/
+		if (enemies != null)
+    	{
+    		if (enemies.size() == 0)
+    		{
+    			Win();
+    			return;
+    		}
+    		for (Enemy enemy : enemies) 
+    		{
+    			if (enemy.IsCloseTo(finishPoint))
+    			{
+    				Lose();
+    				return;
+    			}
+			}
+    	}
 		
 		elapsed++;
     }
 
+    /**
+     * drawing a map 
+     * */
 	public void drawBackground(GL2 gl)
 	{
 		background_tex.enable(gl);
@@ -229,11 +359,11 @@ public class TowDefDrawing implements GLEventListener
 		background_tex.disable(gl);
 	}
     
-    public void displayChanged(GLAutoDrawable gLDrawable, boolean modeChanged, boolean deviceChanged) 
-    {
-    	System.out.println("displayChanged called");
-    }
  
+	/**
+	 * method called before animation starts
+	 * initializing the path of the enemies
+	 */
     public void init(GLAutoDrawable gLDrawable) 
     {
     	loadTextures(gLDrawable);
@@ -249,17 +379,23 @@ public class TowDefDrawing implements GLEventListener
     	path.add(new Vector2d(45 + 7 * MapX, 30 + 1 * MapY));
     	path.add(new Vector2d(45 + 9 * MapX, 30 + 1 * MapY));
     	path.add(new Vector2d(45 + 9 * MapX, 30 + 6 * MapY));
+    	finishPoint = new Vector2d(45 + 9 * MapX, 30 + 6 * MapY);
 
-    	System.out.println("init() called");
         GL2 gl = gLDrawable.getGL().getGL2();
         gl.glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
         gl.glShadeModel(GL2.GL_FLAT);
     }
  
+    /**
+     * this method is required by the interface, but in current project is not used
+     * */
     public void reshape(GLAutoDrawable gLDrawable, int x, int y, int width, int height) 
     {}
  
  
+    /**
+     * this method is required by the interface, but in current project is not used
+     * */    
 	public void dispose(GLAutoDrawable arg0) 
 	{
 		System.out.println("dispose() called");

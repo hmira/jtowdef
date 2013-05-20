@@ -7,32 +7,50 @@ import javax.vecmath.Vector2d;
 
 import com.jogamp.opengl.util.texture.Texture;
 
-
+/**
+ * @author hmira
+ * class that describes behavior of enemies
+ * */
 abstract public class Enemy {
 
-	
+    /** variables describing the dimensions */
 	int R_X = -18;
 	int L_X = 17;
 	int U_Y = -18;
 	int D_Y = 17;
+
+    /** actual position */
     Vector2d center = new Vector2d(0,0);
+    /** next point that enemy hits */
     Vector2d next_checkpoint = new Vector2d();
+    /** point that enemy hits right after hits next checkpoint */
     Vector2d next_checkpoint2 = new Vector2d();
-    Integer price = 1;
     
+    /** time(in frames) when was spawned */
     long spawned;
     
+    /** money earned after defeating */
+    int price;
+    
+    /** direction of movement */
     public Vector2d dir = new Vector2d();
 
+    /** reference to path of enemy */
     public ArrayList<Vector2d> path;
 
+    /** if enemy hits end, is true */
     public boolean HitEnd = false;
+    
+    /** if <b>Amo</b> is non-positive, is false */
     public boolean Alive = true;
+    
+    /** decreased after every hit of {@link Bullet} */
     public int Amo = 200;
 
-    public double Elapsed;
-
+    /** reference to texture */
     protected int texture;
+    
+    /** number of pixels per unit of time (frame) */
     public double Speed = 1;
 
     
@@ -40,17 +58,25 @@ abstract public class Enemy {
 	{
 	}
 	
+	/**
+	 * @param spawned	time starting in the game 
+	 * */
 	public Enemy(long spawned)
 	{
 		this.spawned = spawned;
 	}
 	
+	/** set new position */
 	public void Update(int x, int y)
 	{
 	    this.center.setX(x);
 	    this.center.setY(y);
 	}
 
+	/**
+	 * @param elapsed	actual time of the frame
+	 * position recalculation 
+	 * */
 	public void Move(long elapsed, ArrayList<Vector2d> points) 
 	{
 		double lap = (elapsed - spawned);
@@ -88,9 +114,15 @@ abstract public class Enemy {
 		
 	}
 
+    /**
+     * drawing function
+     * */
 	public void Draw(GL2 gl)
 	{};
-	
+
+    /**
+     * drawing function
+     * */
 	public void Draw(GL2 gl, Texture tex)
 	{
         gl.glEnable(GL.GL_BLEND); 
@@ -106,6 +138,17 @@ abstract public class Enemy {
 
 		tex.disable(gl);
 		gl.glDisable(GL.GL_BLEND);
+	}
+	
+	/**
+	 * used for checking whether enemy hits the finish
+	 * close ~ 0.5px
+	 * */
+	boolean IsCloseTo(Vector2d point)
+	{
+		Vector2d temp = new Vector2d(center);
+		temp.sub(point);
+		return (temp.length() < 0.5);
 	}
 	
 }

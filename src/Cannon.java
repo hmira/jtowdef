@@ -5,15 +5,28 @@ import javax.vecmath.Vector2d;
 
 import com.jogamp.opengl.util.texture.Texture;
 
-
+/** 
+ * @author hmira
+ *
+ */
 public abstract class Cannon {
 
+	/** rotation of the cannon */
 	Vector2d Aim = new Vector2d(1,0);
 	
+	/** money needed for constructing a Cannon */
 	protected int price = 1;
+	
+	/** maximum range in pixels */
     int range = 200;
+    
+    /** parameter used in construction {@link Bullet} */
     int power = 25;
+    
+    /** time of last shot */
     long lastshot = Integer.MIN_VALUE;
+    
+    /** least possible interval of shoots */
     int shotinterval = 100;
 
 	int R_X = -30;
@@ -29,13 +42,25 @@ public abstract class Cannon {
     	position = new Vector2d();
     }
 	
+    /**
+     * 
+     * @param x	X coordinate
+     * @param y	Y coordinate
+     */
 	public Cannon(double x, double y)
 	{
 		position = new Vector2d(x,y);
 	}
 
+    /**
+     * drawing function
+     * */
 	public void Draw(GL2 gl)
 	{}
+
+    /**
+     * drawing function
+     * */
 	public void Draw(GL2 gl, Texture tex)
 	{
         Vector2d AimN = Aim;
@@ -72,6 +97,10 @@ public abstract class Cannon {
 		gl.glDisable(GL.GL_BLEND);
 	}
 	
+	/**
+	 * @param enemy
+	 * @return		the predicted position of collision the bullet and enemy
+	 * */
 	public Vector2d BulletPrediction(Enemy enemy)
 	{
 		Vector2d x1 = new Vector2d(enemy.center);
@@ -89,6 +118,10 @@ public abstract class Cannon {
 		return result;
 	}
 	
+	/**
+	 * @param enemy
+	 * setting <b>Aim</b> to be pointing on <b>enemy</b>
+	 */
 	public void CreateAim(Enemy enemy)
 	{
 		Vector2d v = BulletPrediction(enemy);
@@ -98,6 +131,12 @@ public abstract class Cannon {
 		Aim.normalize();
 	}
 	
+	/**
+	 * If cannon could not reach the enemy, returns null
+	 * @param enemy		the item to be shot
+	 * @param elapsed	game-time elapsed (in frames)
+	 * @return			Bullet with parameters according the type of <b>Cannon</b>
+	 */
 	public Bullet Shoot(Enemy enemy, long elapsed)
     {
 		if (elapsed - lastshot < shotinterval)
@@ -114,7 +153,13 @@ public abstract class Cannon {
 		lastshot = elapsed;
         return ret;
     }
-	
+
+	/**
+	 * calculate the predicted point of collision of
+	 * bullet and enemy
+	 * @param enemy		the item to be shot
+	 * @return			point of collision
+	 */
 	public Vector2d GetIntersect(Enemy enemy)
 	{
 		Vector2d Target = new Vector2d();
@@ -146,6 +191,17 @@ public abstract class Cannon {
 		return Target;
 	}
 	
+	/**
+	 * helper to calculate the predicted point of collision
+	 * case that enemy <b>does not</b> change direction of movement
+	 * @param A				path point A
+	 * @param B				path point B
+	 * @param CannonSpeed	speed of Cannon
+	 * @param EnemySpeed	speed of Enemy
+	 * @param EnemyPos		position of Enemy
+	 * @param CanPos		position of Cannon
+	 * @return
+	 */
 	static Vector2d GetIntersect1(
             Vector2d A,
             Vector2d B,
@@ -219,6 +275,17 @@ public abstract class Cannon {
             return new Vector2d();
         }
 	
+		/**
+		 * helper to calculate the predicted point of collision
+		 * case that enemy <b>does</b> change direction of movement
+		 * @param AA			path point A
+		 * @param BB			path point B
+		 * @param CannonSpeed	speed of Cannon
+		 * @param EnemySpeed	speed of Enemy
+		 * @param EnemyPos		position of Enemy
+		 * @param CanPos		position of Cannon
+		 * @return
+		 */
 		Vector2d GetIntersect2(
             Vector2d AA,
             Vector2d BB,

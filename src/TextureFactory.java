@@ -3,10 +3,17 @@ import java.io.IOException;
 import javax.media.opengl.GL2;
 import javax.media.opengl.GLException;
 
+import com.jogamp.opengl.swt.GLCanvas;
 import com.jogamp.opengl.util.texture.Texture;
 import com.jogamp.opengl.util.texture.TextureIO;
 
-
+/**
+ * class that generates all textures needed
+ * in the game JTowDef
+ * 
+ * @author hmira
+ *
+ */
 public class TextureFactory {
 
 	public Texture enemy1_tex = null;
@@ -19,6 +26,10 @@ public class TextureFactory {
 	public Texture bullet_tex = null;
 	public Texture range_preview_tex = null;
 	
+	/**
+	 * textures initialization
+	 * @param gl GL used as {@link GLCanvas} in animation loop
+	 */
 	public void InitTextures(GL2 gl) {
 		InitEnemy1Texture(gl);
 		InitEnemy2Texture(gl);

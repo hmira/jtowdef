@@ -4,9 +4,13 @@ import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 
 import java.awt.BorderLayout;
+import java.awt.Button;
 import java.awt.Dimension;
+import java.beans.PropertyChangeEvent;
+import java.beans.PropertyChangeListener;
 import java.util.ArrayList;
 
+import javax.media.nativewindow.WindowClosingProtocol.WindowClosingMode;
 import javax.media.opengl.GLCapabilities;
 import javax.media.opengl.awt.GLCanvas;
 import javax.media.opengl.GLProfile;
@@ -14,6 +18,7 @@ import javax.media.opengl.GLProfile;
 import javax.swing.ButtonGroup;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
+import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JRadioButton;
 import javax.swing.JToolBar;
@@ -21,18 +26,77 @@ import javax.swing.SwingUtilities;
 
 import com.jogamp.opengl.util.FPSAnimator;
 
-
+/**
+ * @author hmira
+ *  
+ * */
 public class TowerDef {
 
-	/**
-	 * @param args
-	 */
 	static int MapX = 90;
 	static int MapY = 80;
 	static boolean[][] map = new boolean[11][6];
 	
-	public static void createAndShowGUI() {
+	/**
+	 * basic function showing GUI
+	 *  */
+	public static void createAndShowGUI()
+	{
+		mainMenu("Welcome to tower defense");
+	}
+	
+	/**
+	 * @param s	welcome text in label
+	 * */
+	public static void mainMenu(String s)
+	{
+        final JFrame jf = new JFrame( "Tower Defense" );
+ 		jf.pack();
+ 		
+		JPanel p = new JPanel();
+		p.setPreferredSize(new Dimension(400, 100));
+		p.setLayout(new BorderLayout());
 		
+		Button jb = new Button("press to play");
+		jb.addMouseListener(new MouseListener() {
+			
+			@Override
+			public void mouseReleased(MouseEvent arg0) {}
+			
+			@Override
+			public void mousePressed(MouseEvent arg0) {}
+			
+			@Override
+			public void mouseExited(MouseEvent arg0) {}
+			
+			@Override
+			public void mouseEntered(MouseEvent arg0) {}
+			
+			@Override
+			public void mouseClicked(MouseEvent arg0) {
+				startGame();
+				jf.dispose();
+			}
+		});
+
+        jf.addWindowListener(new WindowAdapter() {
+            public void windowClosing(WindowEvent ev) {
+                System.exit(0);
+            }
+        });
+		
+		p.add(new JLabel(s), BorderLayout.NORTH);
+		p.add(jb, BorderLayout.CENTER);
+
+ 		jf.getContentPane().add(p);
+ 		jf.setSize(320, 80);
+ 		jf.setVisible(true);	
+	}
+	
+	/**
+	 * function that starts a gameplay
+	 * */
+	public static void startGame()
+	{
 		JPanel p = new JPanel();
 		p.setPreferredSize(new Dimension(400, 100));
 		p.setLayout(new BorderLayout());
@@ -56,13 +120,30 @@ public class TowerDef {
 		jtb.add(can1_button);
 		jtb.add(can2_button);
 		jtb.add(can3_button);
+		p.add(jtb, BorderLayout.NORTH);
+		
+        final JFrame jf = new JFrame( "Tower Defense" );
+ 		jf.pack();
+ 		
+        jf.addWindowListener(new WindowAdapter() {
+            public void windowClosing(WindowEvent ev) {
+                System.exit(0);
+            }
+        });
+        
+ 		jf.getContentPane().add(p);
+ 		
+ 		jf.setSize(990, 540);
+ 		jf.setResizable(false);
+ 		jf.setVisible(true);
 		
 		final ArrayList<Enemy> enemies = new ArrayList<Enemy>();
 		final ArrayList<Cannon> cannons = new ArrayList<Cannon>();
 		final ArrayList<Bullet> bullets = new ArrayList<Bullet>();
 		final RangePreviewer rangePreviewer = new RangePreviewer();
-		
 
+		
+		//list of the enemies and their time-to-get-ready
 		enemies.add(new Enemy1(0));
 		enemies.add(new Enemy1(100));
 		enemies.add(new Enemy1(200));
@@ -113,9 +194,38 @@ public class TowerDef {
 		GLCapabilities capabilities = new GLCapabilities(glp);
  
     	// The canvas is the widget that's drawn in the JFrame
-		
-    	GLCanvas glcanvas = new GLCanvas(capabilities);
+    	final GLCanvas glcanvas = new GLCanvas(capabilities);
+    	
+    	final FPSAnimator am = new FPSAnimator(glcanvas, 60);
+        p.add( glcanvas, BorderLayout.CENTER);
     	final TowDefDrawing tdd = new TowDefDrawing();
+    	tdd.addPropertyChangeListener(new PropertyChangeListener() {
+			
+			@Override
+			public void propertyChange(PropertyChangeEvent arg0) {
+				System.err.println(arg0.getNewValue());
+				if (arg0.getNewValue() == TowDefDrawing.GameStatus.LOSE)
+				{
+					am.stop();
+					glcanvas.setDefaultCloseOperation(WindowClosingMode.DO_NOTHING_ON_CLOSE);
+					glcanvas.getContext().getGL().getGL2().getContext().release();
+					
+					jf.setVisible(false);
+					JOptionPane.showMessageDialog(null, "You Lost!");
+					System.exit(0);
+				}
+				else if (arg0.getNewValue() == TowDefDrawing.GameStatus.WIN)
+				{
+					am.stop();
+					glcanvas.setDefaultCloseOperation(WindowClosingMode.DO_NOTHING_ON_CLOSE);
+					glcanvas.getContext().getGL().getGL2().getContext().release();
+					
+					jf.setVisible(false);
+					JOptionPane.showMessageDialog(null, "You Win!");
+					System.exit(0);
+				}
+			}
+		});
     	
     	tdd.setMoney(3, moneyLabel);
     	tdd.setEnemies(enemies);
@@ -124,6 +234,7 @@ public class TowerDef {
     	tdd.setRangePreviewer(rangePreviewer);
     	
     	glcanvas.addGLEventListener(tdd);
+    	
     	glcanvas.addMouseListener(new MouseListener() {
 			
 			@Override
@@ -160,31 +271,12 @@ public class TowerDef {
 				}
 			}
 		});
- 
-        JFrame jf = new JFrame( "Tower Defense" );
-        p.add( glcanvas, BorderLayout.CENTER);
- 		jf.pack();
-
- 		final FPSAnimator am = new FPSAnimator(glcanvas, 60);
  		am.start();
- 		
-        jf.addWindowListener(new WindowAdapter() {
-            public void windowClosing(WindowEvent ev) {
-            	am.stop();
-                System.exit(0);
-            }
-        });
-        
-		p.add(jtb, BorderLayout.NORTH);
-        
- 		jf.getContentPane().add(p);
- 		
- 		jf.setSize(990, 540);
- 		jf.setVisible(true);
 	}
 	
 	public static void main(String[] args) {
 
+		GLProfile.initSingleton();
 		for (int i = 0; i < 11; ++i) {
 	        for (int j = 0; j < 6; ++j) {
 	            map[i][j] = false;
